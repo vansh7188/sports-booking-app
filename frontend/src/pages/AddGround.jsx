@@ -52,7 +52,10 @@ function AddGround() {
       alert("Ground added successfully");
       navigate("/");
     } catch (error) {
-      console.log("Add ground error:", error.response?.data || error.message);
+      console.log("Add ground error:", error);
+      console.log("Status:", error.response?.status);
+      console.log("Data:", error.response?.data);
+
       alert(error.response?.data?.message || "Failed to add ground");
     }
   };
