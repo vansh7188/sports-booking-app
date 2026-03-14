@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const streamifier = require("streamifier");
 const Ground = require("../models/Ground");
+const Feedback = require("../models/Feedback");
 const protect = require("../middleware/authMiddleware");
 const cloudinary = require("../config/cloudinary");
 
@@ -50,7 +51,23 @@ const uploadToCloudinary = (fileBuffer) => {
 router.get("/", async (req, res) => {
   try {
     const grounds = await Ground.find().sort({ createdAt: -1 });
-    res.json(grounds);
+
+    // Get feedback stats for each ground
+    const groundsWithFeedback = await Promise.all(
+      grounds.map(async (ground) => {
+        const feedback = await Feedback.find({ ground: ground._id });
+        const averageRating = feedback.length > 0
+          ? feedback.reduce((sum, f) => sum + f.rating, 0) / feedback.length
+          : 0;
+        return {
+          ...ground.toObject(),
+          feedbackCount: feedback.length,
+          averageRating: Math.round(averageRating * 10) / 10, // round to 1 decimal
+        };
+      })
+    );
+
+    res.json(groundsWithFeedback);
   } catch (error) {
     console.log("GET grounds error:", error);
     res.status(500).json({ message: "Failed to fetch grounds" });
@@ -86,7 +103,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", protect, upload.single("image"), async (req, res) => {
   try {
-    const { groundName, sportType, location, pricePerHour, availableSlots } =
+    const { groundName, sportType, location, pricePerHour, availableSlots, features } =
       req.body;
 
     let parsedSlots = [];
@@ -98,6 +115,18 @@ router.post("/", protect, upload.single("image"), async (req, res) => {
         parsedSlots = Array.isArray(availableSlots)
           ? availableSlots
           : availableSlots.split(",").map((slot) => slot.trim());
+      }
+    }
+
+    let parsedFeatures = [];
+
+    if (features) {
+      try {
+        parsedFeatures = JSON.parse(features);
+      } catch (err) {
+        parsedFeatures = Array.isArray(features)
+          ? features
+          : features.split(",").map((feature) => feature.trim());
       }
     }
 
@@ -114,6 +143,7 @@ router.post("/", protect, upload.single("image"), async (req, res) => {
       location,
       pricePerHour,
       availableSlots: parsedSlots,
+      features: parsedFeatures,
       image: imageUrl,
       owner: req.user.email,
     });

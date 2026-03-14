@@ -8,6 +8,7 @@ function AddGround() {
   const [location, setLocation] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
   const [availableSlots, setAvailableSlots] = useState("");
+  const [features, setFeatures] = useState("");
   const [image, setImage] = useState(null);
 
   const navigate = useNavigate();
@@ -37,6 +38,13 @@ function AddGround() {
         .filter((slot) => slot !== "");
 
       formData.append("availableSlots", JSON.stringify(slotsArray));
+
+      const featuresArray = features
+        .split(",")
+        .map((feature) => feature.trim())
+        .filter((feature) => feature !== "");
+
+      formData.append("features", JSON.stringify(featuresArray));
 
       if (image) {
         formData.append("image", image);
@@ -114,6 +122,14 @@ function AddGround() {
             value={availableSlots}
             onChange={(e) => setAvailableSlots(e.target.value)}
             required
+            className="w-full border p-3 rounded-lg"
+          />
+
+          <input
+            type="text"
+            placeholder="Features (comma separated, e.g. Parking, Lighting, Shower)"
+            value={features}
+            onChange={(e) => setFeatures(e.target.value)}
             className="w-full border p-3 rounded-lg"
           />
 

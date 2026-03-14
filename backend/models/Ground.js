@@ -30,6 +30,10 @@ const groundSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    features: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );
