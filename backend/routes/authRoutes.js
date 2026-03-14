@@ -3,7 +3,9 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-// signup route
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+
+// signup
 router.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -41,7 +43,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// login route
+// login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -68,7 +70,7 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(
       { email: user.email },
-      process.env.JWT_SECRET || "secretkey",
+      JWT_SECRET,
       { expiresIn: "1h" }
     );
 
