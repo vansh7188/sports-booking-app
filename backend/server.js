@@ -12,19 +12,39 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://sports-booking-app-iazj.vercel.app",
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://sports-booking-app-iazj.vercel.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: function (origin, callback) {
+      // allow requests with no origin (postman/browser direct/open api url)
+      if (!origin) return callback(null, true);
+
+      // allow exact origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // allow Vercel preview domains for this project
+      if (
+        origin.endsWith(".vercel.app") &&
+        origin.includes("sports-booking-app-iazj")
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
 app.use(express.json());
-
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
