@@ -39,10 +39,9 @@ function Grounds() {
   const fetchGroundFeedback = async (ground) => {
     try {
       const res = await API.get(`/api/feedback/${ground._id}`);
-
       setFeedback(res.data);
     } catch (error) {
-      console.log("Fetch feedback error:", error);
+      console.log("Fetch feedback error:", error.response?.data || error.message);
       setFeedback([]);
     }
   };
@@ -76,19 +75,18 @@ function Grounds() {
 
     try {
       await API.post(`/api/feedback/${selectedGround._id}`, newFeedback, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       setNewFeedback({ rating: 5, comment: "" });
-
       await fetchGrounds();
-
-      const updatedGround = grounds.find((g) => g._id === selectedGround._id) || selectedGround;
-      await fetchGroundFeedback(updatedGround);
+      await fetchGroundFeedback(selectedGround);
 
       alert("Review submitted successfully");
     } catch (error) {
-      console.log("Submit feedback error:", error);
+      console.log("Submit feedback error:", error.response?.data || error.message);
       alert(error.response?.data?.message || "Failed to submit feedback");
     }
   };
@@ -114,7 +112,7 @@ function Grounds() {
       return image;
     }
 
-    return `https://sports-booking-app-pi4g.onrender.com${image}`;
+    return `${import.meta.env.VITE_API_URL}${image}`;
   };
 
   return (

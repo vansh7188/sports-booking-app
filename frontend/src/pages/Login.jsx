@@ -16,7 +16,6 @@ function Login() {
         password,
       });
 
-      console.log("Login response:", res.data);
       localStorage.setItem("token", res.data.token);
       alert("Login successful");
       navigate("/");
