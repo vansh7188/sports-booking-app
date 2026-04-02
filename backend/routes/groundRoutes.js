@@ -103,8 +103,26 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", protect, upload.single("image"), async (req, res) => {
   try {
-    const { groundName, sportType, location, pricePerHour, availableSlots, features } =
+    const {
+      groundName,
+      sportType,
+      location,
+      latitude,
+      longitude,
+      pricePerHour,
+      availableSlots,
+      features,
+    } =
       req.body;
+
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+
+    if (!Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)) {
+      return res.status(400).json({
+        message: "Valid latitude and longitude are required",
+      });
+    }
 
     let parsedSlots = [];
 
@@ -141,6 +159,8 @@ router.post("/", protect, upload.single("image"), async (req, res) => {
       groundName,
       sportType,
       location,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
       pricePerHour,
       availableSlots: parsedSlots,
       features: parsedFeatures,

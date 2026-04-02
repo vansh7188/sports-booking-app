@@ -6,12 +6,31 @@ function AddGround() {
   const [groundName, setGroundName] = useState("");
   const [sportType, setSportType] = useState("");
   const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
   const [availableSlots, setAvailableSlots] = useState("");
   const [features, setFeatures] = useState("");
   const [image, setImage] = useState(null);
 
   const navigate = useNavigate();
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported in this browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude.toFixed(6));
+        setLongitude(position.coords.longitude.toFixed(6));
+      },
+      () => {
+        alert("Unable to fetch your current location");
+      }
+    );
+  };
 
   const handleAddGround = async (e) => {
     e.preventDefault();
@@ -30,6 +49,8 @@ function AddGround() {
       formData.append("groundName", groundName);
       formData.append("sportType", sportType);
       formData.append("location", location);
+      formData.append("latitude", Number(latitude));
+      formData.append("longitude", Number(longitude));
       formData.append("pricePerHour", Number(pricePerHour));
 
       const slotsArray = availableSlots
@@ -58,7 +79,7 @@ function AddGround() {
 
       console.log("Ground added:", res.data);
       alert("Ground added successfully");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error) {
       console.log("Add ground error:", error);
       console.log("Status:", error.response?.status);
@@ -106,6 +127,36 @@ function AddGround() {
             required
             className="w-full border p-3 rounded-lg"
           />
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input
+              type="number"
+              step="any"
+              placeholder="Latitude (e.g. 28.6139)"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+              required
+              className="w-full border p-3 rounded-lg"
+            />
+
+            <input
+              type="number"
+              step="any"
+              placeholder="Longitude (e.g. 77.2090)"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+              required
+              className="w-full border p-3 rounded-lg"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            className="w-full rounded-lg border border-green-300 bg-green-50 py-2.5 font-semibold text-green-700 transition hover:bg-green-100"
+          >
+            Use Current Coordinates
+          </button>
 
           <input
             type="number"

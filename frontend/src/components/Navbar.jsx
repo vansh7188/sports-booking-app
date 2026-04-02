@@ -21,7 +21,7 @@ function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link
-            to="/"
+            to="/dashboard"
             className="text-2xl font-bold text-green-600 flex items-center gap-2"
           >
             ⚽ SportsBooking
@@ -51,7 +51,7 @@ function Navbar() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
             <Link
-              to="/"
+              to="/dashboard"
               className="text-gray-700 hover:text-green-600 font-medium"
             >
               Grounds
@@ -114,7 +114,7 @@ function Navbar() {
           <div className="md:hidden border-t border-gray-200 py-4">
             <div className="flex flex-col gap-4">
               <Link
-                to="/"
+                to="/dashboard"
                 className="text-gray-700 hover:text-green-600 font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -178,6 +178,7 @@ function Navbar() {
                   </Link>
                 </>
               )}
+
             </div>
           </div>
         )}
