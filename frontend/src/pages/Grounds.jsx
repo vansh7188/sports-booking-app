@@ -6,6 +6,9 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
   const [grounds, setGrounds] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedSport, setSelectedSport] = useState("all");
+  const [sortBy, setSortBy] = useState("recommended");
+  const [minRating, setMinRating] = useState("all");
+  const [maxPrice, setMaxPrice] = useState("");
   const [selectedGround, setSelectedGround] = useState(null);
   const [feedback, setFeedback] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -16,6 +19,25 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
   useEffect(() => {
     fetchGrounds();
   }, []);
+
+  function getDistanceInKm(lat1, lon1, lat2, lon2) {
+    const toRadians = (value) => (value * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+
+    const deltaLat = toRadians(lat2 - lat1);
+    const deltaLon = toRadians(lon2 - lon1);
+
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(deltaLon / 2) *
+        Math.sin(deltaLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadiusKm * c;
+  }
 
   const fetchGrounds = async () => {
     setIsLoading(true);
@@ -97,10 +119,13 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
     }
   };
 
-  const filteredGrounds = grounds.filter((ground) => {
+  const filteredGrounds = grounds
+    .filter((ground) => {
     const name = ground.groundName || "";
     const location = ground.location || "";
     const sport = ground.sportType || "";
+    const price = Number(ground.pricePerHour || 0);
+    const rating = Number(ground.averageRating || 0);
 
     const searchMatch =
       name.toLowerCase().includes(search.toLowerCase()) ||
@@ -110,6 +135,12 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
     const sportMatch =
       selectedSport === "all" ||
       sport.toLowerCase() === selectedSport.toLowerCase();
+
+    const ratingMatch =
+      minRating === "all" || rating >= Number(minRating);
+
+    const priceMatch =
+      maxPrice === "" || price <= Number(maxPrice);
 
     let radiusMatch = true;
 
@@ -128,8 +159,47 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
       radiusMatch = distance <= radiusKm;
     }
 
-    return searchMatch && sportMatch && radiusMatch;
-  });
+    return searchMatch && sportMatch && ratingMatch && priceMatch && radiusMatch;
+  })
+    .sort((left, right) => {
+      if (sortBy === "price-low") {
+        return (left.pricePerHour || 0) - (right.pricePerHour || 0);
+      }
+
+      if (sortBy === "price-high") {
+        return (right.pricePerHour || 0) - (left.pricePerHour || 0);
+      }
+
+      if (sortBy === "rating") {
+        return (right.averageRating || 0) - (left.averageRating || 0);
+      }
+
+      if (sortBy === "distance" && userLocation) {
+        const leftDistance =
+          Number.isFinite(left.latitude) && Number.isFinite(left.longitude)
+            ? getDistanceInKm(
+                userLocation.latitude,
+                userLocation.longitude,
+                left.latitude,
+                left.longitude
+              )
+            : Number.POSITIVE_INFINITY;
+
+        const rightDistance =
+          Number.isFinite(right.latitude) && Number.isFinite(right.longitude)
+            ? getDistanceInKm(
+                userLocation.latitude,
+                userLocation.longitude,
+                right.latitude,
+                right.longitude
+              )
+            : Number.POSITIVE_INFINITY;
+
+        return leftDistance - rightDistance;
+      }
+
+      return 0;
+    });
 
   const uniqueSports = [
     "all",
@@ -161,25 +231,6 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
     }
 
     return `${import.meta.env.VITE_API_URL}${image}`;
-  };
-
-  const getDistanceInKm = (lat1, lon1, lat2, lon2) => {
-    const toRadians = (value) => (value * Math.PI) / 180;
-    const earthRadiusKm = 6371;
-
-    const deltaLat = toRadians(lat2 - lat1);
-    const deltaLon = toRadians(lon2 - lon1);
-
-    const a =
-      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-      Math.cos(toRadians(lat1)) *
-        Math.cos(toRadians(lat2)) *
-        Math.sin(deltaLon / 2) *
-        Math.sin(deltaLon / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return earthRadiusKm * c;
   };
 
   const openDirections = (ground) => {
@@ -308,6 +359,80 @@ function Grounds({ radiusKm, setRadiusKm, userLocation, requestUserLocation }) {
               {sport}
             </button>
           ))}
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Filters</p>
+              <p className="text-xs text-slate-500">
+                Refine grounds by price, rating, and sort order.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSortBy("recommended");
+                setMinRating("all");
+                setMaxPrice("");
+                setSelectedSport("all");
+                setSearch("");
+              }}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Clear All
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Sort By
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-700 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              >
+                <option value="recommended">Recommended</option>
+                <option value="rating">Top Rated</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="distance">Nearest First</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Minimum Rating
+              </label>
+              <select
+                value={minRating}
+                onChange={(e) => setMinRating(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-700 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              >
+                <option value="all">All Ratings</option>
+                <option value="4">4★ and above</option>
+                <option value="3">3★ and above</option>
+                <option value="2">2★ and above</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Maximum Price / Hour
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="e.g. 1000"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-700 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </div>
+          </div>
         </div>
 
         {isLoading ? (
